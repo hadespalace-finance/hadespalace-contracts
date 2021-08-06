@@ -218,6 +218,7 @@ library SafeMath {
 // File: contracts\libs\IBEP20.sol
 
 
+
 pragma solidity >=0.4.0;
 
 interface IBEP20 {
@@ -794,6 +795,7 @@ abstract contract ReentrancyGuard {
         _status = _NOT_ENTERED;
     }
 }
+
 
 // File: contracts\libs\BEP20.sol
 
@@ -1997,6 +1999,12 @@ contract MasterChef is Ownable, ReentrancyGuard {
         return poolInfo.length;
     }
 
+    mapping(IBEP20 => bool) public poolExistence;
+    modifier nonDuplicated(IBEP20 _lpToken) {
+        require(poolExistence[_lpToken] == false, "nonDuplicated: duplicated");
+        _;
+    }
+
     // Add a new lp to the pool. Can only be called by the owner.
     // XXX DO NOT add the same LP token more than once. Rewards will be messed up if you do.
     function add(
@@ -2005,7 +2013,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
         uint16 _depositFeeBP,
         uint256 _harvestInterval,
         bool _withUpdate
-    ) public onlyOwner {
+    ) public onlyOwner nonDuplicated(_lpToken) {
         require(
             _depositFeeBP <= MAXIMUM_DEPOSIT_FEE,
             "add: invalid deposit fee basis points"
@@ -2021,6 +2029,7 @@ contract MasterChef is Ownable, ReentrancyGuard {
             ? block.number
             : startBlock;
         totalAllocPoint = totalAllocPoint.add(_allocPoint);
+        poolExistence[_lpToken] = true;
         poolInfo.push(
             PoolInfo({
                 lpToken: _lpToken,
